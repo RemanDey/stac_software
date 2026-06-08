@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en" class="bg-slate-950 text-slate-100">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CLASS XRF · Lunar Telemetry Workstation</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Plotly.js (WebGL-accelerated) -->
+  <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+
+  <!-- Google Fonts: Orbitron (display) + IBM Plex Mono (data) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=IBM+Plex+Mono:wght@300;400;600&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --col-bg:          #020817;
+      --col-panel:       #0f172a;
+      --col-border:      #1e3a5f;
+      --col-accent-cyan: #22d3ee;
+      --col-accent-em:   #10b981;
+      --col-accent-amb:  #f59e0b;
+      --col-accent-rose: #f43f5e;
+      --col-muted:       #64748b;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'IBM Plex Mono', monospace;
+      background: var(--col-bg);
+      overflow-x: hidden;
+    }
+
+    /* Star-field background */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background-image:
+        radial-gradient(1px 1px at 10%  15%, rgba(255,255,255,.45) 0%, transparent 100%),
+        radial-gradient(1px 1px at 35%  70%, rgba(255,255,255,.35) 0%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 55% 30%, rgba(255,255,255,.5) 0%, transparent 100%),
+        radial-gradient(1px 1px at 75%  85%, rgba(255,255,255,.40) 0%, transparent 100%),
+        radial-gradient(1px 1px at 90%  20%, rgba(255,255,255,.30) 0%, transparent 100%),
+        radial-gradient(1px 1px at 20%  90%, rgba(255,255,255,.25) 0%, transparent 100%),
+        radial-gradient(1px 1px at 65%  55%, rgba(255,255,255,.20) 0%, transparent 100%);
+    }
+
+    /* Scanline overlay */
+    body::after {
+      content: '';
+      position: fixed; inset: 0; z-index: 1; pointer-events: none;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 200, 255, 0.012) 2px,
+        rgba(0, 200, 255, 0.012) 4px
+      );
+    }
+
+    #app { position: relative; z-index: 2; }
+
+    /* ── Typography ─────────────────────────────────────────────────────── */
+    .font-display { font-family: 'Orbitron', sans-serif; }
+
+    /* ── Panels ─────────────────────────────────────────────────────────── */
+    .panel {
+      background: var(--col-panel);
+      border: 1px solid var(--col-border);
+      border-radius: 6px;
+      position: relative;
+      overflow: hidden;
+    }
+    .panel::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--col-accent-cyan), transparent);
+      opacity: .6;
+    }
+
+    /* ── Metric cards ───────────────────────────────────────────────────── */
+    .metric-card {
+      background: linear-gradient(135deg, rgba(15,23,42,.9), rgba(2,8,23,.9));
+      border: 1px solid var(--col-border);
+      border-radius: 6px;
+      padding: 1rem;
+      transition: border-color .25s;
+    }
+    .metric-card:hover { border-color: var(--col-accent-cyan); }
+
+    .metric-value {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.7rem;
+      font-weight: 800;
+      letter-spacing: .04em;
+      line-height: 1.1;
+    }
+
+    /* ── Sidebar controls ───────────────────────────────────────────────── */
+    .ctrl-label {
+      font-size: .65rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--col-muted);
+      margin-bottom: .3rem;
+      display: block;
+    }
+
+    .ctrl-input {
+      width: 100%;
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--col-border);
+      border-radius: 4px;
+      color: var(--col-accent-cyan);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: .8rem;
+      padding: .4rem .6rem;
+      outline: none;
+      transition: border-color .2s;
+    }
+    .ctrl-input:focus { border-color: var(--col-accent-cyan); }
+
+    .ctrl-select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2322d3ee'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right .6rem center;
+      padding-right: 2rem;
+    }
+
+    .orbit-checkbox { accent-color: var(--col-accent-cyan); cursor: pointer; }
+
+    /* ── Buttons ────────────────────────────────────────────────────────── */
+    .btn-primary {
+      font-family: 'Orbitron', sans-serif;
+      font-size: .72rem;
+      letter-spacing: .1em;
+      font-weight: 600;
+      background: linear-gradient(135deg, #0e7490, #0891b2);
+      border: 1px solid var(--col-accent-cyan);
+      border-radius: 4px;
+      color: #fff;
+      padding: .55rem 1.1rem;
+      cursor: pointer;
+      transition: all .2s;
+      display: inline-flex; align-items: center; gap: .4rem;
+    }
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #0891b2, #22d3ee);
+      box-shadow: 0 0 14px rgba(34,211,238,.35);
+    }
+    .btn-export {
+      background: linear-gradient(135deg, #065f46, #059669);
+      border-color: var(--col-accent-em);
+    }
+    .btn-export:hover {
+      background: linear-gradient(135deg, #059669, #10b981);
+      box-shadow: 0 0 14px rgba(16,185,129,.35);
+    }
+
+    /* ── Charts ─────────────────────────────────────────────────────────── */
+    .chart-wrap { background: transparent; min-height: 320px; }
+
+    /* ── Section header ─────────────────────────────────────────────────── */
+    .section-header {
+      font-family: 'Orbitron', sans-serif;
+      font-size: .65rem;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--col-accent-cyan);
+      padding: .6rem 1rem;
+      border-bottom: 1px solid var(--col-border);
+      display: flex; align-items: center; gap: .6rem;
+    }
+    .section-header .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--col-accent-cyan);
+      box-shadow: 0 0 6px var(--col-accent-cyan);
+      flex-shrink: 0;
+    }
+
+    /* ── Science brief ──────────────────────────────────────────────────── */
+    .brief-body {
+      max-height: 0; overflow: hidden;
+      transition: max-height .45s cubic-bezier(.4,0,.2,1);
+    }
+    .brief-body.open { max-height: 900px; }
+
+    /* ── Loader pulse ───────────────────────────────────────────────────── */
+    @keyframes pulse-cyan {
+      0%, 100% { opacity: .25; }
+      50%       { opacity: 1;   }
+    }
+    .loading-indicator {
+      display: none;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--col-accent-cyan);
+      animation: pulse-cyan 1.1s ease-in-out infinite;
+    }
+    .loading-indicator.active { display: block; }
+
+    /* ── Scrollbar ──────────────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--col-border); border-radius: 2px; }
+
+    /* ── Range slider ───────────────────────────────────────────────────── */
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100%; height: 4px;
+      background: var(--col-border);
+      border-radius: 2px; outline: none; cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--col-accent-cyan);
+      box-shadow: 0 0 6px var(--col-accent-cyan);
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+<div id="app" class="min-h-screen p-3 md:p-4">
+
+  <!-- ═══════════════════════════  TOP HEADER  ═══════════════════════════ -->
+  <header class="flex flex-wrap items-center justify-between gap-3 mb-4">
+    <div>
+      <h1 class="font-display text-xl md:text-2xl font-bold tracking-widest text-cyan-300">
+        ◈ CLASS XRF WORKSTATION
+      </h1>
+      <p class="text-xs text-slate-500 mt-0.5 tracking-widest">
+        CHANDRAYAAN-2 · LARGE AREA SOFT X-RAY SPECTROMETER · TELEMETRY v2.1
+      </p>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <div id="loadingDot" class="loading-indicator"></div>
+      <span id="lastUpdated" class="text-xs text-slate-500">—</span>
+      <button class="btn-primary btn-export" onclick="exportCSV()">
+        ↓ EXPORT CSV
+      </button>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════  MAIN GRID  ════════════════════════════ -->
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-3" id="mainGrid">
+
+    <!-- ────────────────────  SIDEBAR CONTROLS  ──────────────────────── -->
+    <aside class="lg:col-span-1 flex flex-col gap-3">
+
+      <!-- Element selector -->
+      <div class="panel p-3">
+        <div class="section-header -mx-3 -mt-3 mb-3"><div class="dot"></div> TARGET ELEMENT</div>
+        <label class="ctrl-label">Primary visualisation element</label>
+        <select id="elementSelect" class="ctrl-input ctrl-select" onchange="fetchData()">
+          <option value="fe_pct">Iron (Fe)</option>
+          <option value="mg_pct">Magnesium (Mg)</option>
+          <option value="al_pct">Aluminum (Al)</option>
+          <option value="si_pct">Silicon (Si)</option>
+        </select>
+
+        <div class="mt-3 grid grid-cols-4 gap-1 text-center text-xs">
+          <div class="element-badge bg-rose-950 border border-rose-700 rounded p-1 cursor-pointer hover:border-rose-400 transition-colors" onclick="setElement('fe_pct')">
+            <div class="font-display text-rose-400 font-bold text-sm">Fe</div>
+            <div class="text-slate-500 text-xs">26</div>
+          </div>
+          <div class="element-badge bg-emerald-950 border border-emerald-700 rounded p-1 cursor-pointer hover:border-emerald-400 transition-colors" onclick="setElement('mg_pct')">
+            <div class="font-display text-emerald-400 font-bold text-sm">Mg</div>
+            <div class="text-slate-500 text-xs">12</div>
+          </div>
+          <div class="element-badge bg-cyan-950 border border-cyan-700 rounded p-1 cursor-pointer hover:border-cyan-400 transition-colors" onclick="setElement('al_pct')">
+            <div class="font-display text-cyan-400 font-bold text-sm">Al</div>
+            <div class="text-slate-500 text-xs">13</div>
+          </div>
+          <div class="element-badge bg-amber-950 border border-amber-700 rounded p-1 cursor-pointer hover:border-amber-400 transition-colors" onclick="setElement('si_pct')">
+            <div class="font-display text-amber-400 font-bold text-sm">Si</div>
+            <div class="text-slate-500 text-xs">14</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Spatial bounds -->
+      <div class="panel p-3">
+        <div class="section-header -mx-3 -mt-3 mb-3"><div class="dot"></div> SPATIAL BOUNDS</div>
+
+        <div class="mb-3">
+          <label class="ctrl-label">Latitude Min: <span id="minLatVal" class="text-cyan-400">-90</span>°</label>
+          <input type="range" id="minLat" min="-90" max="90" value="-90" step="1"
+                 oninput="updateSliderLabel('minLat','minLatVal'); fetchData()" />
+        </div>
+        <div class="mb-3">
+          <label class="ctrl-label">Latitude Max: <span id="maxLatVal" class="text-cyan-400">90</span>°</label>
+          <input type="range" id="maxLat" min="-90" max="90" value="90" step="1"
+                 oninput="updateSliderLabel('maxLat','maxLatVal'); fetchData()" />
+        </div>
+        <div class="mb-3">
+          <label class="ctrl-label">Longitude Min: <span id="minLonVal" class="text-cyan-400">-180</span>°</label>
+          <input type="range" id="minLon" min="-180" max="180" value="-180" step="1"
+                 oninput="updateSliderLabel('minLon','minLonVal'); fetchData()" />
+        </div>
+        <div>
+          <label class="ctrl-label">Longitude Max: <span id="maxLonVal" class="text-cyan-400">180</span>°</label>
+          <input type="range" id="maxLon" min="-180" max="180" value="180" step="1"
+                 oninput="updateSliderLabel('maxLon','maxLonVal'); fetchData()" />
+        </div>
+      </div>
+
+      <!-- Orbit selector -->
+      <div class="panel p-3">
+        <div class="section-header -mx-3 -mt-3 mb-3"><div class="dot"></div> ORBIT PASSES</div>
+        <div class="flex gap-2 mb-2">
+          <button class="btn-primary text-xs py-1 px-2 flex-1" onclick="selectAllOrbits(true)"  style="font-size:.6rem">ALL</button>
+          <button class="btn-primary text-xs py-1 px-2 flex-1" onclick="selectAllOrbits(false)" style="font-size:.6rem">NONE</button>
+        </div>
+        <div id="orbitCheckboxes" class="grid grid-cols-3 gap-1 max-h-48 overflow-y-auto pr-1">
+          {% for o in orbits %}
+          <label class="flex items-center gap-1.5 text-xs text-slate-400 hover:text-cyan-300 cursor-pointer transition-colors">
+            <input type="checkbox" class="orbit-checkbox orbit-cb" value="{{ o }}" checked onchange="fetchData()" />
+            <span class="font-display text-xs">{{ o }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Science brief (collapsible) -->
+      <div class="panel">
+        <button class="w-full text-left px-3 py-2.5 flex items-center justify-between" onclick="toggleBrief()">
+          <span class="section-header !border-0 !p-0"><div class="dot"></div> SCIENCE BRIEFING</span>
+          <span id="briefArrow" class="text-cyan-400 text-sm transition-transform duration-300">▼</span>
+        </button>
+        <div id="briefBody" class="brief-body">
+          <div class="px-3 pb-3 text-xs text-slate-400 space-y-2 leading-relaxed">
+            <p class="text-cyan-300 font-semibold">Solar X-Ray Fluorescence Spectroscopy</p>
+            <p>When the Sun emits X-rays, they strike the lunar regolith and excite valence electrons in surface minerals. The excited atoms re-emit characteristic fluorescence photons at discrete energies unique to each element — a spectral fingerprint.</p>
+
+            <p class="text-amber-400 font-semibold mt-2">🌋 Equatorial Mare Basalts (|lat| &lt; 30°)</p>
+            <p>Elevated <strong class="text-rose-400">Fe</strong> and <strong class="text-emerald-400">Mg</strong> concentrations indicate ancient volcanic flood plains (e.g., Mare Imbrium, Mare Tranquillitatis). These regions crystallised from iron-rich magma oceans ~3.8 Gyr ago.</p>
+
+            <p class="text-amber-400 font-semibold mt-2">🏔 Polar Highlands (|lat| &gt; 45°)</p>
+            <p>High <strong class="text-cyan-400">Al</strong> and <strong class="text-amber-400">Si</strong> signatures denote the ancient anorthosite crust — primary crustal material formed when lighter minerals floated to the top of the cooling magma ocean.</p>
+
+            <p class="text-amber-400 font-semibold mt-2">📡 Reading the Charts</p>
+            <ul class="list-disc list-inside space-y-1 pl-1">
+              <li><strong class="text-cyan-300">Spatial map</strong>: Marker size = CPS (photon rate); colour = elemental %. Clusters near the equator with large, red dots = active Mare volcanic plains.</li>
+              <li><strong class="text-cyan-300">Flux-CPS chart</strong>: Positive linear correlation confirms the physics — higher solar irradiance excites more fluorescence photons.</li>
+              <li><strong class="text-cyan-300">3D Globe</strong>: Each point is projected to spherical coordinates (R=1). Rotate to see orbital ground-tracks wrapping the lunar geoid.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- ─────────────────────  MAIN CONTENT AREA  ──────────────────────── -->
+    <main class="lg:col-span-3 flex flex-col gap-3">
+
+      <!-- Metric cards row -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div class="metric-card">
+          <div class="ctrl-label">SAMPLE COUNT</div>
+          <div class="metric-value text-cyan-400" id="statCount">—</div>
+          <div class="text-xs text-slate-500 mt-1">active obs.</div>
+        </div>
+        <div class="metric-card">
+          <div class="ctrl-label">MEAN SOLAR FLUX</div>
+          <div class="metric-value text-amber-400" id="statFlux">—</div>
+          <div class="text-xs text-slate-500 mt-1">W m⁻²</div>
+        </div>
+        <div class="metric-card">
+          <div class="ctrl-label">PEAK CPS</div>
+          <div class="metric-value text-emerald-400" id="statCPS">—</div>
+          <div class="text-xs text-slate-500 mt-1">photons s⁻¹</div>
+        </div>
+        <div class="metric-card">
+          <div class="ctrl-label">DOMINANT ELEMENT</div>
+          <div class="metric-value text-rose-400" id="statElement">—</div>
+          <div class="text-xs text-slate-500 mt-1">highest wt%</div>
+        </div>
+      </div>
+
+      <!-- Chart 1: 2D Spatial distribution -->
+      <div class="panel">
+        <div class="section-header"><div class="dot"></div> 2D SPATIAL DISTRIBUTION — LUNAR GEOID SURFACE</div>
+        <div id="chart2D" class="chart-wrap" style="height:360px;"></div>
+      </div>
+
+      <!-- Charts 2 & 3 side by side on wide screens -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+
+        <!-- Chart 2: Flux vs CPS -->
+        <div class="panel">
+          <div class="section-header"><div class="dot"></div> SPECTRAL FLUX ANALYSIS</div>
+          <div id="chartFlux" class="chart-wrap" style="height:310px;"></div>
+        </div>
+
+        <!-- Chart 3: 3D Globe -->
+        <div class="panel">
+          <div class="section-header"><div class="dot"></div> 3D ORBITAL PROJECTION — LUNAR SPHERE</div>
+          <div id="chart3D" class="chart-wrap" style="height:310px;"></div>
+        </div>
+
+      </div>
+
+    </main>
+  </div><!-- /mainGrid -->
+
+  <!-- Footer -->
+  <footer class="mt-4 text-center text-xs text-slate-700 tracking-widest">
+    ISRO · CHANDRAYAAN-2 · CLASS PAYLOAD SIMULATION · DATA SCIENCE WORKSTATION
+    &nbsp;|&nbsp; LAT/LON REFERENCED TO LUNAR MEAN EARTH / POLAR AXIS FRAME
+  </footer>
+
+</div><!-- /app -->
+
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   LUNAR XRF WORKSTATION — CLIENT CONTROLLER
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const PLOTLY_BASE = {
+  paper_bgcolor: 'rgba(0,0,0,0)',
+  plot_bgcolor:  'rgba(0,0,0,0)',
+  font:  { family: 'IBM Plex Mono, monospace', color: '#94a3b8', size: 10 },
+  margin: { t: 20, r: 20, b: 50, l: 55 },
+  autosize: true,
+};
+
+const AXIS_STYLE = {
+  gridcolor:    'rgba(30,58,95,.55)',
+  zerolinecolor:'rgba(34,211,238,.2)',
+  tickfont:     { size: 9, color: '#64748b' },
+  titlefont:    { size: 10, color: '#94a3b8' },
+};
+
+let cachedRecords = [];
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function setElement(val) {
+  document.getElementById('elementSelect').value = val;
+  fetchData();
+}
+
+function updateSliderLabel(sliderId, labelId) {
+  document.getElementById(labelId).textContent = document.getElementById(sliderId).value;
+}
+
+function selectAllOrbits(state) {
+  document.querySelectorAll('.orbit-cb').forEach(cb => {
+    cb.checked = state;
+  });
+  fetchData();
+}
+
+function toggleBrief() {
+  const body  = document.getElementById('briefBody');
+  const arrow = document.getElementById('briefArrow');
+  body.classList.toggle('open');
+  arrow.style.transform = body.classList.contains('open') ? 'rotate(180deg)' : 'rotate(0deg)';
+}
+
+// ── Debounce ─────────────────────────────────────────────────────────────────
+let debounceTimer = null;
+const RAW_fetchData = _fetchData;
+
+function fetchData() {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(RAW_fetchData, 160);
+}
+
+// ── Main data fetch ───────────────────────────────────────────────────────────
+async function _fetchData() {
+  const loader = document.getElementById('loadingDot');
+  loader.classList.add('active');
+
+  const elem    = document.getElementById('elementSelect').value;
+  const minLat  = document.getElementById('minLat').value;
+  const maxLat  = document.getElementById('maxLat').value;
+  const minLon  = document.getElementById('minLon').value;
+  const maxLon  = document.getElementById('maxLon').value;
+  const checked = [...document.querySelectorAll('.orbit-cb:checked')].map(c => c.value);
+
+  if (checked.length === 0) {
+    renderEmptyCharts('No orbit passes selected');
+    updateMetricCards({ sample_count: 0, mean_solar_flux: 0, peak_cps: 0, dominant_element: 'N/A' });
+    loader.classList.remove('active');
+    return;
+  }
+
+  const params = new URLSearchParams({
+    min_lat: minLat, max_lat: maxLat,
+    min_lon: minLon, max_lon: maxLon,
+    orbits:  checked.join(',')
+  });
+
+  try {
+    const res  = await fetch(`/api/data?${params}`);
+    const data = await res.json();
+
+    cachedRecords = data.records;
+    updateMetricCards(data.stats);
+    renderCharts(data.records, elem);
+
+    document.getElementById('lastUpdated').textContent =
+      `UPDATED ${new Date().toTimeString().slice(0,8)}`;
+  } catch (err) {
+    console.error('Fetch error:', err);
+  } finally {
+    loader.classList.remove('active');
+  }
+}
+
+// ── Metric cards ─────────────────────────────────────────────────────────────
+function updateMetricCards(stats) {
+  document.getElementById('statCount').textContent   = stats.sample_count.toLocaleString();
+  document.getElementById('statFlux').textContent    = stats.mean_solar_flux.toFixed(3);
+  document.getElementById('statCPS').textContent     = stats.peak_cps.toLocaleString();
+  document.getElementById('statElement').textContent = stats.dominant_element;
+}
+
+// ── Chart renderers ───────────────────────────────────────────────────────────
+function renderCharts(records, elemKey) {
+  if (!records.length) { renderEmptyCharts('No data in current viewport'); return; }
+
+  const lons  = records.map(r => r.longitude);
+  const lats  = records.map(r => r.latitude);
+  const cps   = records.map(r => r.counts_per_second);
+  const flux  = records.map(r => r.solar_flux);
+  const evals = records.map(r => r[elemKey]);
+  const orbit = records.map(r => r.orbit_number);
+  const ts    = records.map(r => r.timestamp);
+  const fePct = records.map(r => r.fe_pct);
+  const mgPct = records.map(r => r.mg_pct);
+  const alPct = records.map(r => r.al_pct);
+  const siPct = records.map(r => r.si_pct);
+
+  const elemLabel = {
+    fe_pct: 'Fe wt%', mg_pct: 'Mg wt%', al_pct: 'Al wt%', si_pct: 'Si wt%'
+  }[elemKey];
+
+  const hoverText = records.map((r,i) =>
+    `Orbit ${orbit[i]}<br>` +
+    `Lat: ${lats[i].toFixed(2)}° Lon: ${lons[i].toFixed(2)}°<br>` +
+    `CPS: ${cps[i]} | Flux: ${flux[i].toFixed(3)} W/m²<br>` +
+    `Fe:${fePct[i].toFixed(1)}% Mg:${mgPct[i].toFixed(1)}% Al:${alPct[i].toFixed(1)}% Si:${siPct[i].toFixed(1)}%`
+  );
+
+  // ── Chart 1: 2D Spatial ──────────────────────────────────────────────────
+  const cpsNorm = cps.map(v => 4 + (v / Math.max(...cps)) * 14);
+
+  Plotly.react('chart2D', [{
+    type:   'scatter',
+    mode:   'markers',
+    x:      lons,
+    y:      lats,
+    text:   hoverText,
+    hovertemplate: '%{text}<extra></extra>',
+    marker: {
+      size:       cpsNorm,
+      color:      evals,
+      colorscale: 'Viridis',
+      reversescale: false,
+      showscale:  true,
+      colorbar: {
+        title: { text: elemLabel, font: { color: '#94a3b8', size: 9 } },
+        tickfont: { color: '#64748b', size: 8 },
+        thickness: 12, len: 0.85,
+        bgcolor: 'rgba(0,0,0,0)', bordercolor: '#1e3a5f',
+      },
+      line: { color: 'rgba(255,255,255,.08)', width: .5 },
+      opacity: 0.88,
+    }
+  }], {
+    ...PLOTLY_BASE,
+    margin: { t: 20, r: 80, b: 50, l: 55 },
+    xaxis: {
+      ...AXIS_STYLE,
+      title: { text: 'Longitude (°)', standoff: 8 },
+      range: [-180, 180],
+    },
+    yaxis: {
+      ...AXIS_STYLE,
+      title: { text: 'Latitude (°)', standoff: 8 },
+      range: [-90, 90],
+    },
+    shapes: [
+      {
+        type: 'rect', xref: 'x', yref: 'y',
+        x0: -180, x1: 180, y0: -90, y1: 90,
+        line: { color: 'rgba(34,211,238,.12)', width: 1 },
+        fillcolor: 'transparent'
+      }
+    ],
+    annotations: [
+      { x: 0, y: 0, xref: 'x', yref: 'y', text: 'Mare Equatorial Band',
+        showarrow: false, font: { size: 8, color: 'rgba(245,158,11,.4)' } }
+    ]
+  }, { responsive: true, displayModeBar: false });
+
+  // ── Chart 2: Flux vs CPS ─────────────────────────────────────────────────
+  Plotly.react('chartFlux', [{
+    type:   'scatter',
+    mode:   'markers',
+    x:      flux,
+    y:      cps,
+    text:   hoverText,
+    hovertemplate: '%{text}<extra></extra>',
+    marker: {
+      size:    5,
+      color:   evals,
+      colorscale: 'Electric',
+      showscale: false,
+      opacity: 0.75,
+      line: { color: 'rgba(255,255,255,.05)', width: .3 },
+    }
+  }], {
+    ...PLOTLY_BASE,
+    xaxis: { ...AXIS_STYLE, title: { text: 'Solar Flux (W m⁻²)', standoff: 8 } },
+    yaxis: { ...AXIS_STYLE, title: { text: 'Counts per Second',  standoff: 8 } },
+  }, { responsive: true, displayModeBar: false });
+
+  // ── Chart 3: 3D Globe projection ─────────────────────────────────────────
+  const R = 1.0;
+  const toRad = d => d * Math.PI / 180;
+  const xs = lats.map((la, i) => R * Math.cos(toRad(la)) * Math.cos(toRad(lons[i])));
+  const ys = lats.map((la, i) => R * Math.cos(toRad(la)) * Math.sin(toRad(lons[i])));
+  const zs = lats.map(la       => R * Math.sin(toRad(la)));
+
+  // Wireframe sphere (low-resolution, grayscale)
+  const phiArr  = Array.from({ length: 25 }, (_, i) => (i / 24) * Math.PI - Math.PI / 2);
+  const thetArr = Array.from({ length: 25 }, (_, i) => (i / 24) * 2 * Math.PI);
+  const sX = [], sY = [], sZ = [];
+  phiArr.forEach(phi => {
+    const row = thetArr.map(th => [
+      R * 0.97 * Math.cos(phi) * Math.cos(th),
+      R * 0.97 * Math.cos(phi) * Math.sin(th),
+      R * 0.97 * Math.sin(phi)
+    ]);
+    row.forEach(([x,y,z]) => { sX.push(x); sY.push(y); sZ.push(z); });
+  });
+
+  Plotly.react('chart3D', [
+    {
+      type: 'scatter3d', mode: 'markers',
+      x: xs, y: ys, z: zs,
+      text: hoverText,
+      hovertemplate: '%{text}<extra></extra>',
+      marker: {
+        size:    3,
+        color:   evals,
+        colorscale: 'Viridis',
+        opacity: 0.9,
+        showscale: false,
+        line: { color: 'rgba(255,255,255,.1)', width: 0 },
+      }
+    },
+    {
+      type: 'scatter3d', mode: 'markers',
+      x: sX, y: sY, z: sZ,
+      hoverinfo: 'skip',
+      marker: { size: 1.2, color: 'rgba(30,58,95,.6)', opacity: .3 },
+    }
+  ], {
+    ...PLOTLY_BASE,
+    margin: { t: 10, r: 10, b: 10, l: 10 },
+    scene: {
+      bgcolor: 'rgba(0,0,0,0)',
+      xaxis: { visible: false, showgrid: false, zeroline: false, showticklabels: false },
+      yaxis: { visible: false, showgrid: false, zeroline: false, showticklabels: false },
+      zaxis: { visible: false, showgrid: false, zeroline: false, showticklabels: false },
+      camera: { eye: { x: 1.5, y: 1.5, z: 1.0 } },
+      aspectmode: 'cube',
+    }
+  }, { responsive: true, displayModeBar: false });
+}
+
+function renderEmptyCharts(msg) {
+  ['chart2D', 'chartFlux', 'chart3D'].forEach(id => {
+    Plotly.react(id, [], {
+      ...PLOTLY_BASE,
+      annotations: [{
+        text: msg, xref: 'paper', yref: 'paper',
+        x: .5, y: .5, showarrow: false,
+        font: { size: 13, color: '#475569' }
+      }]
+    }, { responsive: true, displayModeBar: false });
+  });
+}
+
+// ── CSV export ────────────────────────────────────────────────────────────────
+function exportCSV() {
+  const minLat = document.getElementById('minLat').value;
+  const maxLat = document.getElementById('maxLat').value;
+  const minLon = document.getElementById('minLon').value;
+  const maxLon = document.getElementById('maxLon').value;
+  const checked = [...document.querySelectorAll('.orbit-cb:checked')].map(c => c.value);
+
+  if (!cachedRecords.length) return;
+
+  const cols = Object.keys(cachedRecords[0]);
+  const rows = [cols.join(','),
+    ...cachedRecords.map(r => cols.map(c => JSON.stringify(r[c] ?? '')).join(','))
+  ];
+  const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+  const url  = URL.createObjectURL(blob);
+  const a    = Object.assign(document.createElement('a'), {
+    href: url, download: `lunar_xrf_export_${Date.now()}.csv`
+  });
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+fetchData();
+</script>
+</body>
+</html>
