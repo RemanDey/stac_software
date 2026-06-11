@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto glass-panel p-8 rounded-xl shadow-lg">
+    <h2 class="text-3xl font-bold mb-6 text-neon border-b border-gray-700 pb-2">Scientific Context: Lunar XRF Analytics</h2>
+    
+    <div class="space-y-6 text-gray-300 leading-relaxed text-lg">
+        <p>
+            X-ray Fluorescence (XRF) spectroscopy provides critical insights into planetary evolution by quantifying elemental abundances on the surface.
+        </p>
+        
+        <h3 class="text-xl font-semibold text-white">Geochemical Signatures</h3>
+        <ul class="list-disc list-inside space-y-2">
+            <li><strong>Lunar Maria:</strong> Characterized by basaltic flows. Look for high signatures of <strong>Fe (Iron)</strong> and <strong>Ti (Titanium)</strong>.</li>
+            <li><strong>Lunar Highlands:</strong> The older, heavily cratered crust composed largely of anorthosite. Marked by high <strong>Al (Aluminum)</strong> and <strong>Ca (Calcium)</strong>.</li>
+        </ul>
+
+        <div class="bg-gray-800 p-4 border-l-4 border-neon rounded text-sm">
+            <strong>Key Analytical Ratio:</strong> The Al/Si vs Mg/Si ratio is standard for classifying lunar terranes. High Al/Si typically strongly correlates with highland anorthosites.
+        </div>
+    </div>
+</div>
+{% endblock %}

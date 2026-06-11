@@ -11,22 +11,23 @@ Chandrayaan-2.
 ## Architecture
 
 ```
-lunar_xrf_dashboard/
-├── app.py                  ← Flask backend (data generation, REST API)
+stac_software/
+├── app.py                  ← Flask backend routes and request handlers
+├── data_processing.py      ← Modular data ingestion, filtering, schema parsing, Plotly payload creation
 ├── requirements.txt        ← Python dependencies
-├── README.md               ← This file
-└── templates/
-    └── index.html          ← Full single-page workstation (Tailwind + Plotly.js)
+├── README.md               ← Project documentation
+├── static/                 ← CSS and client-side JavaScript
+└── templates/              ← Jinja2 HTML templates
 ```
 
 ### Separation of Concerns
 
-| Layer | Technology | Responsibility |
-|-------|-----------|---------------|
-| **Backend** | Python 3 + Flask | Procedural data generation, pandas DataFrame slicing, server-side statistics, REST JSON API |
-| **Data core** | NumPy + pandas | In-memory matrix operations, spatial query filtering |
-| **Frontend UI** | HTML5 + Tailwind CSS (CDN) | Immersive space-tech dashboard, responsive grid layout |
-| **Visualisation** | Plotly.js (CDN, WebGL) | 2D scatter map, flux analysis chart, 3D globe projection |
+| Layer | File | Responsibility |
+|-------|------|----------------|
+| **Backend** | `app.py` | Flask route handlers, uploads, sample data control, JSON API endpoints |
+| **Data core** | `data_processing.py` | Data loading, synthetic generation, schema inference, Plotly figure generation, typed-array decoding |
+| **Frontend UI** | `static/js/dashboard.js` | Fetch schema and plot payloads, render Plotly charts, handle user controls |
+| **Templates** | `templates/*.html` | Page layout and script/style injection |
 
 ---
 
@@ -40,21 +41,14 @@ lunar_xrf_dashboard/
 ### Steps
 
 ```bash
-# 1 — Clone / unzip the project
-cd lunar_xrf_dashboard
-
-# 2 — (Optional but recommended) Create a virtual environment
+cd /home/remandey/my-programs/stac/stac_software
 python -m venv .venv
-source .venv/bin/activate      # Windows: .venv\Scripts\activate
-
-# 3 — Install dependencies
+source .venv/bin/activate
 pip install -r requirements.txt
-
-# 4 — Run the Flask development server
 python app.py
 ```
 
-Navigate to **http://127.0.0.1:5000** in your browser.
+Open **http://127.0.0.1:5000** in your browser.
 
 ---
 
