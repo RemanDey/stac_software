@@ -5,7 +5,7 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for, R
 from werkzeug.utils import secure_filename
 
 from data_processing import (
-    build_plot_payload,
+    build_plot_payloads,
     filter_by_bounds,
     generate_synthetic_data,
     get_current_data,
@@ -48,6 +48,17 @@ def dashboard():
 def analysis():
     return render_template('analysis.html')
 
+@app.route('/api/data', methods=['GET'])
+def api_data():
+    """Return the current dataset as JSON for client-side analysis."""
+    df = get_current_data(DATA_FILE)
+    _, _, elements = parse_schema(df)
+    return jsonify({
+        'columns': df.columns.tolist(),
+        'numeric_columns': elements,
+        'rows': df.to_dict(orient='records'),
+    })
+
 # --- API ENDPOINTS FOR AJAX ---
 
 @app.route('/api/schema', methods=['GET'])
@@ -77,6 +88,7 @@ def api_plots():
     selected_element = data.get('element')
     lat_range = data.get('lat_range')
     lon_range = data.get('lon_range')
+    custom_graph = data.get('custom_graph')
 
     df = get_current_data(DATA_FILE)
     lat_col, lon_col, elements = parse_schema(df)
@@ -85,12 +97,16 @@ def api_plots():
         selected_element = elements[0] if elements else None
 
     filtered_df = filter_by_bounds(df, lat_col, lon_col, lat_range, lon_range)
-    map_json, hist_json = build_plot_payload(filtered_df, lat_col, lon_col, selected_element)
-
-    return Response(
-        json.dumps({'map_json': map_json, 'hist_json': hist_json}),
-        mimetype='application/json',
+    plot_payloads = build_plot_payloads(
+        filtered_df,
+        lat_col,
+        lon_col,
+        selected_element,
+        elements,
+        custom_graph=custom_graph,
     )
+
+    return jsonify(plot_payloads)
 
 if __name__ == '__main__':
     app.run(debug=True)

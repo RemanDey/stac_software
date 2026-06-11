@@ -10,19 +10,38 @@ document.addEventListener("DOMContentLoaded", () => {
         })
         .catch(err => console.error("Error loading schema:", err));
 
-    // 2. Attach Event Listener to Filter Button
-    document.getElementById('apply-filters').addEventListener('click', fetchPlots);
+    // 2. Attach Event Listeners
+    document.getElementById('apply-filters').addEventListener('click', event => {
+        event.preventDefault();
+        fetchPlots();
+    });
+    document.getElementById('apply-custom').addEventListener('click', event => {
+        event.preventDefault();
+        fetchPlots(true);
+    });
 });
 
 function populateUI(schema) {
     const elementSelect = document.getElementById('element-select');
+    const xSelect = document.getElementById('custom-x');
+    const ySelect = document.getElementById('custom-y');
     
     // Populate Elements Dropdown
     schema.elements.forEach(el => {
-        let option = document.createElement('option');
+        const option = document.createElement('option');
         option.value = el;
         option.textContent = el;
         elementSelect.appendChild(option);
+
+        const xOption = document.createElement('option');
+        xOption.value = el;
+        xOption.textContent = el;
+        xSelect.appendChild(xOption);
+
+        const yOption = document.createElement('option');
+        yOption.value = el;
+        yOption.textContent = el;
+        ySelect.appendChild(yOption);
     });
 
     // Populate Bounds
@@ -35,6 +54,10 @@ function populateUI(schema) {
 }
 
 function renderPlot(containerId, fig) {
+    if (!fig) {
+        return;
+    }
+
     const gd = document.getElementById(containerId);
     if (!gd) {
         console.error(`Plot container not found: ${containerId}`);
@@ -48,7 +71,7 @@ function renderPlot(containerId, fig) {
     }
 }
 
-function fetchPlots() {
+function fetchPlots(isCustom = false) {
     const payload = {
         element: document.getElementById('element-select').value,
         lat_range: [
@@ -60,6 +83,15 @@ function fetchPlots() {
             document.getElementById('lon-max').value
         ]
     };
+
+    if (isCustom) {
+        payload.custom_graph = {
+            type: document.getElementById('custom-graph-type').value,
+            x: document.getElementById('custom-x').value,
+            y: document.getElementById('custom-y').value,
+            agg: document.getElementById('custom-agg').value,
+        };
+    }
 
     fetch('/api/plots', {
         method: 'POST',
@@ -78,6 +110,9 @@ function fetchPlots() {
         console.log('Plot payload:', data);
         renderPlot('map-plot', data.map_json);
         renderPlot('hist-plot', data.hist_json);
+        renderPlot('summary-plot', data.summary_json);
+        renderPlot('trend-plot', data.trend_json);
+        renderPlot('custom-plot', data.custom_json);
     })
     .catch(err => console.error('Error fetching plots:', err));
 }

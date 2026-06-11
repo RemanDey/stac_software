@@ -1,23 +1,48 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto glass-panel p-8 rounded-xl shadow-lg">
-    <h2 class="text-3xl font-bold mb-6 text-neon border-b border-gray-700 pb-2">Scientific Context: Lunar XRF Analytics</h2>
-    
-    <div class="space-y-6 text-gray-300 leading-relaxed text-lg">
-        <p>
-            X-ray Fluorescence (XRF) spectroscopy provides critical insights into planetary evolution by quantifying elemental abundances on the surface.
-        </p>
+<div class="max-w-4xl mx-auto space-y-6">
+    <div class="glass-panel p-8 rounded-xl shadow-lg">
+        <h2 class="text-3xl font-bold mb-6 text-neon border-b border-gray-700 pb-2">Geochemical Analysis</h2>
         
-        <h3 class="text-xl font-semibold text-white">Geochemical Signatures</h3>
-        <ul class="list-disc list-inside space-y-2">
-            <li><strong>Lunar Maria:</strong> Characterized by basaltic flows. Look for high signatures of <strong>Fe (Iron)</strong> and <strong>Ti (Titanium)</strong>.</li>
-            <li><strong>Lunar Highlands:</strong> The older, heavily cratered crust composed largely of anorthosite. Marked by high <strong>Al (Aluminum)</strong> and <strong>Ca (Calcium)</strong>.</li>
-        </ul>
+        <div class="space-y-6 text-gray-300 leading-relaxed text-lg">
+            <p>
+                X-ray Fluorescence (XRF) spectroscopy quantifies elemental abundances at geospatial locations. This analysis suite provides client-side statistical summaries, correlations, and visualizations of the loaded dataset.
+            </p>
+        </div>
+    </div>
 
-        <div class="bg-gray-800 p-4 border-l-4 border-neon rounded text-sm">
-            <strong>Key Analytical Ratio:</strong> The Al/Si vs Mg/Si ratio is standard for classifying lunar terranes. High Al/Si typically strongly correlates with highland anorthosites.
+    <div class="glass-panel p-8 rounded-xl shadow-lg">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+            <div>
+                <h2 class="text-2xl font-bold text-white">Dynamic Analysis</h2>
+                <p class="text-gray-400">Client-side aggregations and statistical summaries from the current dataset.</p>
+            </div>
+            <button id="refresh-analysis" type="button" class="bg-neon text-space px-5 py-2 rounded font-semibold hover:bg-green-400 transition">
+                Refresh Data
+            </button>
+        </div>
+
+        <div id="analysis-cards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6"></div>
+
+        <div class="bg-gray-900 p-4 rounded-xl border border-gray-800">
+            <h3 class="text-xl font-semibold text-white mb-4">Summary Statistics</h3>
+            <div id="analysis-table" class="overflow-x-auto"></div>
+        </div>
+
+        <div class="bg-gray-900 p-4 rounded-xl border border-gray-800 mt-6">
+            <h3 class="text-xl font-semibold text-white mb-4">Mean Abundance Across Elements</h3>
+            <div id="analysis-chart" class="w-full h-96"></div>
+        </div>
+
+        <div class="bg-gray-900 p-4 rounded-xl border border-gray-800 mt-6">
+            <h3 class="text-xl font-semibold text-white mb-4">Correlation Matrix Heatmap</h3>
+            <div id="analysis-heatmap" class="w-full h-96"></div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/analysis.js') }}"></script>
 {% endblock %}

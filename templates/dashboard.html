@@ -27,17 +27,63 @@
             </div>
         </div>
 
-        <button id="apply-filters" class="w-full bg-neon text-space py-2 rounded font-bold hover:bg-green-400 transition mt-auto">
+        <button id="apply-filters" type="button" class="w-full bg-neon text-space py-2 rounded font-bold hover:bg-green-400 transition">
             Apply Filters
         </button>
+
+        <div class="border-t border-gray-700 pt-4">
+            <h3 class="text-lg font-semibold text-white mb-3">Custom Graph</h3>
+            <div>
+                <label class="block text-sm font-medium text-gray-400 mb-2">Graph Type</label>
+                <select id="custom-graph-type" class="w-full bg-gray-800 border border-gray-600 rounded p-2 text-white focus:outline-none focus:border-neon">
+                    <option value="scatter">Scatter</option>
+                    <option value="line">Line</option>
+                    <option value="bar">Bar</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-400 mb-2">X Axis</label>
+                <select id="custom-x" class="w-full bg-gray-800 border border-gray-600 rounded p-2 text-white focus:outline-none focus:border-neon"></select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-400 mb-2">Y Axis</label>
+                <select id="custom-y" class="w-full bg-gray-800 border border-gray-600 rounded p-2 text-white focus:outline-none focus:border-neon"></select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-400 mb-2">Bar Aggregate</label>
+                <select id="custom-agg" class="w-full bg-gray-800 border border-gray-600 rounded p-2 text-white focus:outline-none focus:border-neon">
+                    <option value="sum">Sum</option>
+                    <option value="mean">Mean</option>
+                    <option value="median">Median</option>
+                </select>
+            </div>
+            <button id="apply-custom" type="button" class="w-full bg-transparent border border-neon text-neon py-2 rounded font-bold hover:bg-neon hover:text-space transition">
+                Render Custom Graph
+            </button>
+        </div>
     </aside>
 
     <div class="lg:col-span-3 flex flex-col space-y-6">
-        <div class="glass-panel p-4 rounded-xl shadow-lg h-[400px]">
-            <div id="map-plot" class="w-full h-full"></div>
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <div class="glass-panel p-4 rounded-xl shadow-lg h-[420px]">
+                <div id="map-plot" class="w-full h-full"></div>
+            </div>
+            <div class="glass-panel p-4 rounded-xl shadow-lg h-[420px]">
+                <div id="hist-plot" class="w-full h-full"></div>
+            </div>
         </div>
-        <div class="glass-panel p-4 rounded-xl shadow-lg h-[350px]">
-            <div id="hist-plot" class="w-full h-full"></div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <div class="glass-panel p-4 rounded-xl shadow-lg h-[340px]">
+                <div id="summary-plot" class="w-full h-full"></div>
+            </div>
+            <div class="glass-panel p-4 rounded-xl shadow-lg h-[340px]">
+                <div id="trend-plot" class="w-full h-full"></div>
+            </div>
+        </div>
+
+        <div class="glass-panel p-4 rounded-xl shadow-lg h-[400px]">
+            <div id="custom-plot" class="w-full h-full"></div>
         </div>
     </div>
 </div>
