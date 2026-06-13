@@ -26,10 +26,10 @@
                 LUNAR<span class="text-neon">XRF</span>
             </h1>
             <nav class="space-x-4">
-                <a href="{{ url_for('index') }}" class="hover:text-neon transition">Home</a>
-                <a href="{{ url_for('dashboard') }}" class="hover:text-neon transition">Dashboard</a>
-                <a href="{{ url_for('analysis') }}" class="hover:text-neon transition">Analysis</a>
-                <a href="{{ url_for('about') }}" class="hover:text-neon transition">About</a>
+                <a href="{{ url_for('index') }}" class="{% if request.endpoint == 'index' %}text-neon font-semibold{% else %}hover:text-neon{% endif %} transition">Home</a>
+                <a href="{{ url_for('dashboard') }}" class="{% if request.endpoint == 'dashboard' %}text-neon font-semibold{% else %}hover:text-neon{% endif %} transition">Dashboard</a>
+                <a href="{{ url_for('analysis') }}" class="{% if request.endpoint == 'analysis' %}text-neon font-semibold{% else %}hover:text-neon{% endif %} transition">Analysis</a>
+                <a href="{{ url_for('about') }}" class="{% if request.endpoint == 'about' %}text-neon font-semibold{% else %}hover:text-neon{% endif %} transition">About</a>
             </nav>
         </div>
     </header>
