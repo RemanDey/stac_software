@@ -21,26 +21,56 @@
 </head>
 <body class="bg-space text-gray-200 font-sans min-h-screen flex flex-col">
     <header class="bg-panel border-b border-gray-800 shadow-md">
-        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <h1 class="text-2xl font-bold tracking-wider text-white">
+        <div class="container mx-auto px-4 md:px-6 py-4 flex justify-between items-center">
+            <h1 class="text-xl md:text-2xl font-bold tracking-wider text-white">
                 LUNAR<span class="text-neon">XRF</span>
             </h1>
-            <nav class="space-x-4">
+
+            <button id="menu-toggle" class="md:hidden text-gray-400 hover:text-neon transition focus:outline-none" aria-label="Toggle menu">
+                <svg id="menu-icon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+                <svg id="menu-close" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+
+            <nav class="hidden md:flex space-x-4">
                 <a href="{{ url_for('index') }}" class="{% if request.endpoint == 'index' %}text-neon font-semibold{% else %}hover:text-neon{% endif %} transition">Home</a>
                 <a href="{{ url_for('dashboard') }}" class="{% if request.endpoint == 'dashboard' %}text-neon font-semibold{% else %}hover:text-neon{% endif %} transition">Dashboard</a>
                 <a href="{{ url_for('analysis') }}" class="{% if request.endpoint == 'analysis' %}text-neon font-semibold{% else %}hover:text-neon{% endif %} transition">Analysis</a>
                 <a href="{{ url_for('about') }}" class="{% if request.endpoint == 'about' %}text-neon font-semibold{% else %}hover:text-neon{% endif %} transition">About</a>
             </nav>
         </div>
+
+        <div id="mobile-menu" class="hidden md:hidden border-t border-gray-800 bg-panel">
+            <nav class="flex flex-col space-y-1 px-4 py-3">
+                <a href="{{ url_for('index') }}" class="block px-3 py-2 rounded {% if request.endpoint == 'index' %}text-neon bg-gray-800 font-semibold{% else %}text-gray-300 hover:text-neon hover:bg-gray-800{% endif %} transition">Home</a>
+                <a href="{{ url_for('dashboard') }}" class="block px-3 py-2 rounded {% if request.endpoint == 'dashboard' %}text-neon bg-gray-800 font-semibold{% else %}text-gray-300 hover:text-neon hover:bg-gray-800{% endif %} transition">Dashboard</a>
+                <a href="{{ url_for('analysis') }}" class="block px-3 py-2 rounded {% if request.endpoint == 'analysis' %}text-neon bg-gray-800 font-semibold{% else %}text-gray-300 hover:text-neon hover:bg-gray-800{% endif %} transition">Analysis</a>
+                <a href="{{ url_for('about') }}" class="block px-3 py-2 rounded {% if request.endpoint == 'about' %}text-neon bg-gray-800 font-semibold{% else %}text-gray-300 hover:text-neon hover:bg-gray-800{% endif %} transition">About</a>
+            </nav>
+        </div>
     </header>
 
-    <main class="flex-grow container mx-auto px-6 py-8">
+    <main class="flex-grow container mx-auto px-4 md:px-6 py-6 md:py-8">
         {% block content %}{% endblock %}
     </main>
 
     <footer class="bg-panel border-t border-gray-800 py-4 text-center text-sm text-gray-500">
         &copy; 2026 Reman Dey
     </footer>
+
+    <script>
+        document.getElementById('menu-toggle').addEventListener('click', () => {
+            const menu = document.getElementById('mobile-menu');
+            const icon = document.getElementById('menu-icon');
+            const close = document.getElementById('menu-close');
+            menu.classList.toggle('hidden');
+            icon.classList.toggle('hidden');
+            close.classList.toggle('hidden');
+        });
+    </script>
 
     {% block scripts %}{% endblock %}
 </body>
