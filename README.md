@@ -17,7 +17,7 @@ stac_software/
 │   ├── css/style.css       ← Dark-theme glass-morphism styles
 │   └── js/
 │       ├── dashboard.js    ← Dashboard: schema fetch, plot rendering, filter controls
-│       └── analysis.js     ← Analysis: element selector, stat rendering, Plotly charts
+│       └── analysis.js     ← Analysis: stat rendering, Data Browser, Distribution Explorer, Pair Correlation (all client-side)
 └── templates/
     ├── base.html           ← Layout, nav bar, CDN links (Tailwind, Plotly, Font Awesome)
     ├── index.html          ← Home page with CSV upload / sample data
@@ -33,7 +33,7 @@ stac_software/
 | **Routes** | `app.py` | Page rendering, CSV upload, sample data generation, JSON API endpoints |
 | **Data core** | `data_processing.py` | Data loading, synthetic generation, schema inference, Plotly payload building, typed-array decoding |
 | **Dashboard UI** | `static/js/dashboard.js` | Fetch schema and plot payloads, render Plotly charts, handle filter controls |
-| **Analysis UI** | `static/js/analysis.js` | Fetch analysis payload, render KPI cards, summary table, Plotly charts |
+| **Analysis UI** | `static/js/analysis.js` | Fetch analysis stats + raw data, render KPI cards, summary table, Data Browser, Distribution Explorer, Pair Correlation scatter |
 | **Templates** | `templates/*.html` | Page layout and script/style injection |
 
 ---
@@ -65,7 +65,7 @@ Open **http://127.0.0.1:5000** in your browser.
 |-------|-------------|
 | `/` | Home — upload a CSV or generate synthetic sample data |
 | `/dashboard` | Interactive dashboard — spatial map, histograms, trend lines, custom graphs |
-| `/analysis` | Statistical analysis — KPI cards, summary table, mean chart, box plot, correlation heatmap, distribution histogram |
+| `/analysis` | Statistical analysis — KPI cards, summary table, Data Browser, Distribution Explorer, Element Pair Correlation scatter |
 | `/about` | Project documentation and creator info |
 
 ---
@@ -96,7 +96,7 @@ Generates Plotly chart payloads based on current filters.
 }
 ```
 
-**Response:** `{ "map_json": {...}, "hist_json": {...}, "summary_json": {...}, "trend_json": {...}, "custom_json": {...} }`
+**Response:** `{ "map_json": {...}, "hist_json": {...}, "summary_json": {...}, "trend_json": {...}, "mean_chart": {...}, "box_plot": {...}, "correlation_heatmap": {...}, "distribution_histogram": {...}, "custom_json": {...} }`
 
 ### `POST /api/analysis`
 
@@ -185,23 +185,25 @@ Geochemical rules are encoded via rock-type-dependent distributions and intentio
 - **Frequency Histogram** — distribution of the selected element
 - **Median Abundance Bar Chart** — median values across all elements
 - **Longitude Trend Line** — element variation across longitude
+- **Mean Abundance Bar Chart** — mean values across all elements
+- **Correlation Matrix Heatmap** — pair-wise Pearson correlation
+- **Element Value Distributions** — box plot showing all element ranges
+- **Element Distribution Histogram** — distribution of the selected element
 - **Custom Graph** — user-configured scatter, line, or bar chart
 - **Bounding-box filter** — lat/lon range sliders
 
 ### Analysis
 - **KPI Cards** — total records, numeric fields, highest mean/median, top correlated pair
 - **Summary Statistics Table** — count, mean, median, std dev, variance, min, max, skewness, kurtosis per element
-- **Mean Abundance Bar Chart** — mean values across all elements
-- **Element Value Distributions** — box plot showing all element ranges
-- **Correlation Matrix Heatmap** — pair-wise Pearson correlation
-- **Element Distribution Histogram** — distribution of the selected element
-- **Element Selector** — switch between elements to update the histogram
+- **Data Browser** — paginated, searchable, sortable table of raw data rows (client-side)
+- **Distribution Explorer** — interactive histogram with adjustable bins, mean/median/std overlay lines (client-side)
+- **Element Pair Correlation** — scatter plot with trend line and Pearson coefficient, optional categorical coloring (client-side)
 
 ---
 
 ## Design Decisions
 
-- **Server-side computation** — all statistics are computed in Pandas, not in the browser. This is faster for large datasets and enables richer metrics (skewness, kurtosis, quartiles) without extra client-side code.
+- **Hybrid server/client architecture** — heavy statistical computations (summary stats, correlations, Plotly chart payloads) are computed server-side in Pandas for performance. Interactive exploratory tools (Data Browser, Distribution Explorer, Pair Correlation scatter) run client-side on the fetched raw data for instant responsiveness without server round-trips.
 - **Plotly JSON payloads** — figures are built server-side with Plotly Express, serialised to JSON, decoded from typed arrays, and rendered with `Plotly.react()` for smooth updates and full interactivity.
 - **Dark glass-morphism theme** — translucent panels, radial gradient background, neon green accents. Tailwind CSS handles responsive layout; a small custom CSS file adds backdrop blur and scrollbar styling.
 

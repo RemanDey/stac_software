@@ -112,6 +112,10 @@ function fetchPlots(isCustom = false) {
         renderPlot('hist-plot', data.hist_json);
         renderPlot('summary-plot', data.summary_json);
         renderPlot('trend-plot', data.trend_json);
+        renderPlot('mean-chart', data.mean_chart);
+        renderPlot('box-plot', data.box_plot);
+        renderPlot('correlation-heatmap', data.correlation_heatmap);
+        renderPlot('distribution-histogram', data.distribution_histogram);
         renderPlot('custom-plot', data.custom_json);
     })
     .catch(err => console.error('Error fetching plots:', err));

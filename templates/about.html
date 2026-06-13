@@ -35,8 +35,7 @@
                 <h3 class="text-xl font-semibold text-white mb-3">Architecture</h3>
                 <div class="bg-gray-900 p-4 rounded-xl border border-gray-800">
                     <p class="text-sm text-gray-400 mb-3">
-                        The app follows a classic server-rendered Flask architecture with AJAX-driven interactivity.
-                        All heavy computation happens on the backend &mdash; the browser only renders and plots pre-computed data.
+                        The app follows a hybrid architecture: server-rendered Flask pages with server-side computation for heavy stats, combined with client-side JavaScript for interactive data exploration.
                     </p>
                     <div class="space-y-2 text-sm text-gray-400">
                         <div class="flex items-start gap-3">
@@ -45,11 +44,15 @@
                         </div>
                         <div class="flex items-start gap-3">
                             <span class="text-neon mt-1">&#8226;</span>
-                            <span><strong class="text-gray-300">API Layer</strong> &mdash; Flask endpoints serve schema metadata (<code class="text-neon bg-gray-800 px-1 rounded">GET /api/schema</code>), computed Plotly figures (<code class="text-neon bg-gray-800 px-1 rounded">POST /api/plots</code>), and statistical summaries (<code class="text-neon bg-gray-800 px-1 rounded">POST /api/analysis</code>).</span>
+                            <span><strong class="text-gray-300">API Layer</strong> &mdash; Flask endpoints serve schema metadata (<code class="text-neon bg-gray-800 px-1 rounded">GET /api/schema</code>), computed Plotly figures (<code class="text-neon bg-gray-800 px-1 rounded">POST /api/plots</code>), statistical summaries (<code class="text-neon bg-gray-800 px-1 rounded">POST /api/analysis</code>), and raw data (<code class="text-neon bg-gray-800 px-1 rounded">GET /api/data</code>).</span>
                         </div>
                         <div class="flex items-start gap-3">
                             <span class="text-neon mt-1">&#8226;</span>
-                            <span><strong class="text-gray-300">Rendering</strong> &mdash; Plotly figures are built server-side with Plotly Express, serialized to JSON, decoded from typed arrays, and rendered client-side with <code class="text-neon bg-gray-800 px-1 rounded">Plotly.react()</code>.</span>
+                            <span><strong class="text-gray-300">Server-side Rendering</strong> &mdash; Plotly figures for the dashboard are built server-side with Plotly Express, serialized to JSON, decoded from typed arrays, and rendered client-side with <code class="text-neon bg-gray-800 px-1 rounded">Plotly.react()</code>.</span>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <span class="text-neon mt-1">&#8226;</span>
+                            <span><strong class="text-gray-300">Client-side Exploration</strong> &mdash; The analysis page fetches raw data once and runs interactive tools entirely in the browser: a paginated Data Browser with search/sort, a Distribution Explorer with adjustable bin histograms and stats overlays, and an Element Pair Correlation scatter plot with trend lines &mdash; all computed in JavaScript for instant feedback.</span>
                         </div>
                         <div class="flex items-start gap-3">
                             <span class="text-neon mt-1">&#8226;</span>
@@ -80,8 +83,8 @@
                 <h3 class="text-xl font-semibold text-white mb-3">Design Decisions</h3>
                 <div class="space-y-3">
                     <div class="bg-gray-900 p-4 rounded-xl border border-gray-800">
-                        <div class="text-sm text-gray-300 font-medium mb-1">Server-side computation over client-side</div>
-                        <p class="text-sm text-gray-400">The original analysis page calculated means, medians, and correlations in JavaScript by iterating over all rows. For large datasets this is slow and blocks the UI. Moving statistics to Pandas made the analysis page faster and enabled richer metrics (skewness, kurtosis, quartiles) at no extra cost.</p>
+                        <div class="text-sm text-gray-300 font-medium mb-1">Hybrid server/client architecture</div>
+                        <p class="text-sm text-gray-400">Heavy statistical computations (summary stats, correlation matrices, Plotly chart payloads for the dashboard) are computed server-side in Pandas, which is far more efficient than iterating over thousands of rows in JavaScript. At the same time, the analysis page provides client-side interactive tools — a searchable Data Browser, adjustable Distribution Explorer, and Pair Correlation scatter — that run on the fetched raw data for instant responsiveness without server round-trips. This hybrid approach gives the best of both worlds: scalable computation and snappy interactivity.</p>
                     </div>
                     <div class="bg-gray-900 p-4 rounded-xl border border-gray-800">
                         <div class="text-sm text-gray-300 font-medium mb-1">Plotly JSON payloads instead of HTML</div>

@@ -231,6 +231,94 @@ def build_plot_payloads(
     else:
         payload['trend_json'] = None
 
+    # Mean abundance bar chart
+    if elements:
+        mean_values = df[elements].mean().sort_values(ascending=False)
+        fig_mean = px.bar(
+            x=mean_values.index,
+            y=mean_values.values,
+            title="Mean Abundance Across Elements",
+            labels={'x': 'Element', 'y': 'Mean Value'},
+            template="plotly_dark",
+            color=mean_values.index,
+            color_discrete_sequence=px.colors.qualitative.Dark24,
+        )
+        fig_mean.update_layout(
+            xaxis_tickangle=-45,
+            margin=dict(l=20, r=20, t=40, b=80),
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            showlegend=False,
+        )
+        payload['mean_chart'] = decode_plotly_bdata(json.loads(fig_mean.to_json()))
+    else:
+        payload['mean_chart'] = None
+
+    # Box plot for all elements
+    if elements:
+        fig_box = px.box(
+            df,
+            y=elements,
+            title="Element Value Distributions",
+            template="plotly_dark",
+            color_discrete_sequence=px.colors.qualitative.Dark24,
+        )
+        fig_box.update_layout(
+            margin=dict(l=20, r=20, t=40, b=80),
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            yaxis_title="Value",
+        )
+        payload['box_plot'] = decode_plotly_bdata(json.loads(fig_box.to_json()))
+    else:
+        payload['box_plot'] = None
+
+    # Correlation heatmap
+    if elements and len(elements) > 1:
+        corr_matrix = df[elements].corr()
+        fig_heatmap = px.imshow(
+            corr_matrix,
+            x=corr_matrix.columns,
+            y=corr_matrix.columns,
+            title="Correlation Matrix Heatmap",
+            color_continuous_scale="Viridis",
+            zmin=-1, zmax=1,
+            template="plotly_dark",
+            aspect="auto",
+        )
+        fig_heatmap.update_layout(
+            margin=dict(l=80, r=20, t=40, b=80),
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+        )
+        fig_heatmap.update_traces(
+            hovertemplate='%{x} vs %{y}: %{z:.2f}<extra></extra>'
+        )
+        payload['correlation_heatmap'] = decode_plotly_bdata(
+            json.loads(fig_heatmap.to_json())
+        )
+    else:
+        payload['correlation_heatmap'] = None
+
+    # Distribution histogram for selected element
+    if selected_element:
+        fig_dist = px.histogram(
+            df,
+            x=selected_element,
+            nbins=30,
+            title=f"Distribution of {selected_element}",
+            template="plotly_dark",
+            color_discrete_sequence=['#00e676'],
+        )
+        fig_dist.update_layout(
+            margin=dict(l=20, r=20, t=40, b=20),
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+        )
+        payload['distribution_histogram'] = decode_plotly_bdata(json.loads(fig_dist.to_json()))
+    else:
+        payload['distribution_histogram'] = None
+
     # Custom graph support
     if custom_graph and isinstance(custom_graph, dict):
         graph_type = custom_graph.get('type')

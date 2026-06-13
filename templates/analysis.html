@@ -4,20 +4,10 @@
 <div class="max-w-6xl mx-auto space-y-6">
     <div class="glass-panel p-8 rounded-xl shadow-lg">
         <h2 class="text-3xl font-bold mb-6 text-neon border-b border-gray-700 pb-2">Geochemical Analysis</h2>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="space-y-4 text-gray-300 leading-relaxed text-lg">
-                <p>
-                    X-ray Fluorescence (XRF) spectroscopy quantifies elemental abundances at geospatial locations. This analysis suite provides server-side statistical summaries, correlations, and visualizations of the loaded dataset.
-                </p>
-            </div>
-            <div class="bg-gray-900 p-4 rounded-xl border border-gray-800">
-                <label for="element-select" class="block text-sm font-medium text-gray-400 mb-2">Select Element</label>
-                <select id="element-select" class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-neon focus:border-neon">
-                    <option value="">Loading...</option>
-                </select>
-                <p class="text-xs text-gray-500 mt-2">Choose an element to view its distribution and update analysis.</p>
-            </div>
+        <div class="text-gray-300 leading-relaxed text-lg">
+            <p>
+                X-ray Fluorescence (XRF) spectroscopy quantifies elemental abundances at geospatial locations. This analysis suite provides server-side statistical summaries alongside client-side interactive data exploration tools.
+            </p>
         </div>
     </div>
 
@@ -40,28 +30,58 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="glass-panel p-6 rounded-xl shadow-lg">
-            <h3 class="text-xl font-semibold text-white mb-4">Mean Abundance Across Elements</h3>
-            <div id="analysis-chart" class="w-full h-80"></div>
+    <div class="glass-panel p-6 rounded-xl shadow-lg">
+        <h3 class="text-xl font-semibold text-white mb-4">Data Browser</h3>
+        <p class="text-sm text-gray-400 mb-4">Browse, search, and sort the raw dataset client-side.</p>
+        <div class="flex flex-wrap items-center gap-3 mb-4">
+            <input id="data-search" type="text" placeholder="Search rows..." class="bg-gray-800 border border-gray-700 text-white rounded px-3 py-2 text-sm w-48 focus:outline-none focus:border-neon">
+            <select id="data-column-filter" class="bg-gray-800 border border-gray-700 text-white rounded px-3 py-2 text-sm focus:outline-none focus:border-neon">
+                <option value="">All Columns</option>
+            </select>
+            <span id="data-row-count" class="text-sm text-gray-500 ml-auto"></span>
         </div>
-
-        <div class="glass-panel p-6 rounded-xl shadow-lg">
-            <h3 class="text-xl font-semibold text-white mb-4">Element Value Distributions</h3>
-            <div id="analysis-boxplot" class="w-full h-80"></div>
-        </div>
+        <div id="data-table-container" class="overflow-x-auto max-h-80 overflow-y-auto border border-gray-800 rounded"></div>
+        <div id="data-pagination" class="flex items-center justify-between mt-3 text-sm"></div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="glass-panel p-6 rounded-xl shadow-lg">
-            <h3 class="text-xl font-semibold text-white mb-4">Correlation Matrix Heatmap</h3>
-            <div id="analysis-heatmap" class="w-full h-80"></div>
+    <div class="glass-panel p-6 rounded-xl shadow-lg">
+        <h3 class="text-xl font-semibold text-white mb-4">Distribution Explorer</h3>
+        <p class="text-sm text-gray-400 mb-4">Interactive histogram computed client-side &mdash; adjust bins, overlay statistics.</p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">Element</label>
+                <select id="dist-element" class="w-full bg-gray-800 border border-gray-700 text-white rounded px-3 py-2 text-sm focus:outline-none focus:border-neon"></select>
+            </div>
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">Bins: <span id="dist-bins-value" class="text-neon">30</span></label>
+                <input id="dist-bins" type="range" min="5" max="100" value="30" class="w-full accent-neon">
+            </div>
+            <div id="dist-stats" class="text-xs text-gray-300 py-1"></div>
         </div>
+        <div id="dist-chart" class="w-full h-72"></div>
+    </div>
 
-        <div class="glass-panel p-6 rounded-xl shadow-lg">
-            <h3 class="text-xl font-semibold text-white mb-4">Element Distribution</h3>
-            <div id="analysis-histogram" class="w-full h-80"></div>
+    <div class="glass-panel p-6 rounded-xl shadow-lg">
+        <h3 class="text-xl font-semibold text-white mb-4">Element Pair Correlation</h3>
+        <p class="text-sm text-gray-400 mb-4">Scatter plot with trend line and Pearson coefficient &mdash; all computed client-side.</p>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">X Axis</label>
+                <select id="pair-x" class="w-full bg-gray-800 border border-gray-700 text-white rounded px-3 py-2 text-sm focus:outline-none focus:border-neon"></select>
+            </div>
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">Y Axis</label>
+                <select id="pair-y" class="w-full bg-gray-800 border border-gray-700 text-white rounded px-3 py-2 text-sm focus:outline-none focus:border-neon"></select>
+            </div>
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">Color By</label>
+                <select id="pair-color" class="w-full bg-gray-800 border border-gray-700 text-white rounded px-3 py-2 text-sm focus:outline-none focus:border-neon">
+                    <option value="">None</option>
+                </select>
+            </div>
+            <div id="pair-stats" class="text-xs text-gray-300 py-1"></div>
         </div>
+        <div id="pair-chart" class="w-full h-72"></div>
     </div>
 </div>
 {% endblock %}
