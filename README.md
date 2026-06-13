@@ -1,10 +1,6 @@
-# ◈ CLASS XRF Lunar Telemetry Workstation
+# Lunar XRF Dashboard
 
-**Chandrayaan-2 · Large Area Soft X-ray Spectrometer (CLASS) · Simulation v2.1**
-
-A production-grade telemetry analysis workstation for visualising and filtering
-Lunar X-ray Fluorescence (XRF) data, inspired by ISRO's CLASS payload aboard
-Chandrayaan-2.
+A Flask-based geochemical data analysis workstation for visualising and analysing Lunar X-ray Fluorescence (XRF) data. Features a dark-themed interactive dashboard and analysis suite with server-side statistical computation.
 
 ---
 
@@ -12,21 +8,32 @@ Chandrayaan-2.
 
 ```
 stac_software/
-├── app.py                  ← Flask backend routes and request handlers
-├── data_processing.py      ← Modular data ingestion, filtering, schema parsing, Plotly payload creation
+├── app.py                  ← Flask routes, API endpoints, upload handling
+├── data_processing.py      ← Data ingestion, schema parsing, Plotly figure generation, analysis engine
 ├── requirements.txt        ← Python dependencies
 ├── README.md               ← Project documentation
-├── static/                 ← CSS and client-side JavaScript
-└── templates/              ← Jinja2 HTML templates
+├── uploads/                ← Uploaded or generated CSV datasets
+├── static/
+│   ├── css/style.css       ← Dark-theme glass-morphism styles
+│   └── js/
+│       ├── dashboard.js    ← Dashboard: schema fetch, plot rendering, filter controls
+│       └── analysis.js     ← Analysis: element selector, stat rendering, Plotly charts
+└── templates/
+    ├── base.html           ← Layout, nav bar, CDN links (Tailwind, Plotly, Font Awesome)
+    ├── index.html          ← Home page with CSV upload / sample data
+    ├── dashboard.html      ← Interactive dashboard with maps and plots
+    ├── analysis.html       ← Statistical analysis with summary table and charts
+    └── about.html          ← About the project and creator
 ```
 
 ### Separation of Concerns
 
 | Layer | File | Responsibility |
 |-------|------|----------------|
-| **Backend** | `app.py` | Flask route handlers, uploads, sample data control, JSON API endpoints |
-| **Data core** | `data_processing.py` | Data loading, synthetic generation, schema inference, Plotly figure generation, typed-array decoding |
-| **Frontend UI** | `static/js/dashboard.js` | Fetch schema and plot payloads, render Plotly charts, handle user controls |
+| **Routes** | `app.py` | Page rendering, CSV upload, sample data generation, JSON API endpoints |
+| **Data core** | `data_processing.py` | Data loading, synthetic generation, schema inference, Plotly payload building, typed-array decoding |
+| **Dashboard UI** | `static/js/dashboard.js` | Fetch schema and plot payloads, render Plotly charts, handle filter controls |
+| **Analysis UI** | `static/js/analysis.js` | Fetch analysis payload, render KPI cards, summary table, Plotly charts |
 | **Templates** | `templates/*.html` | Page layout and script/style injection |
 
 ---
@@ -52,123 +59,168 @@ Open **http://127.0.0.1:5000** in your browser.
 
 ---
 
+## Pages
+
+| Route | Description |
+|-------|-------------|
+| `/` | Home — upload a CSV or generate synthetic sample data |
+| `/dashboard` | Interactive dashboard — spatial map, histograms, trend lines, custom graphs |
+| `/analysis` | Statistical analysis — KPI cards, summary table, mean chart, box plot, correlation heatmap, distribution histogram |
+| `/about` | Project documentation and creator info |
+
+---
+
 ## REST API Reference
 
-### `GET /api/data`
+### `GET /api/schema`
 
-Returns a filtered telemetry slice with server-side statistics.
+Returns dataset schema (lat/lon columns, element lists, coordinate bounds).
 
-**Query parameters**
+### `POST /api/plots`
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `min_lat` | float | -90 | Minimum latitude bound |
-| `max_lat` | float | +90 | Maximum latitude bound |
-| `min_lon` | float | -180 | Minimum longitude bound |
-| `max_lon` | float | +180 | Maximum longitude bound |
-| `orbits`  | string | all | Comma-separated orbit numbers (e.g. `101,103,107`) |
+Generates Plotly chart payloads based on current filters.
 
-**Response schema**
+**Request body:**
+
+```json
+{
+  "element": "Fe_wt_pct",
+  "lat_range": ["-30", "30"],
+  "lon_range": ["-60", "60"],
+  "custom_graph": {
+    "type": "scatter",
+    "x": "Al_wt_pct",
+    "y": "Fe_wt_pct",
+    "agg": "mean"
+  }
+}
+```
+
+**Response:** `{ "map_json": {...}, "hist_json": {...}, "summary_json": {...}, "trend_json": {...}, "custom_json": {...} }`
+
+### `POST /api/analysis`
+
+Computes statistical summaries and generates analysis chart payloads server-side.
+
+**Request body:**
+
+```json
+{
+  "element": "Fe_wt_pct"
+}
+```
+
+**Response:**
 
 ```json
 {
   "stats": {
-    "sample_count": 312,
-    "mean_solar_flux": 3.7421,
-    "peak_cps": 498,
-    "dominant_element": "Si"
+    "total_records": 2000,
+    "numeric_fields": 12,
+    "summary": [
+      {
+        "column": "Fe_wt_pct",
+        "count": 2000,
+        "mean": 12.43,
+        "median": 12.18,
+        "std_dev": 5.21,
+        "variance": 27.14,
+        "min": 2.0,
+        "max": 27.5,
+        "skewness": 0.34,
+        "kurtosis": -0.67,
+        "q1": 8.15,
+        "q3": 16.72
+      }
+    ],
+    "highest_mean": { "column": "Si_wt_pct", "value": 20.97 },
+    "highest_median": { "column": "Si_wt_pct", "value": 21.04 },
+    "top_correlation": { "pair": "Al_wt_pct / Fe_wt_pct", "value": -0.98 }
   },
-  "records": [
-    {
-      "timestamp": "2019-09-06T00:00:00",
-      "orbit_number": 101,
-      "latitude": -12.3456,
-      "longitude": 47.8901,
-      "solar_flux": 3.9102,
-      "counts_per_second": 257,
-      "mg_pct": 8.412,
-      "al_pct": 11.234,
-      "si_pct": 21.567,
-      "fe_pct": 14.088
-    }
-  ]
+  "plots": {
+    "mean_chart": {...},
+    "correlation_heatmap": {...},
+    "histogram": {...},
+    "box_plot": {...},
+    "correlation_data": {...}
+  }
 }
 ```
 
-### `GET /api/orbits`
+### `GET /api/data`
 
-Returns the list of available orbit numbers.
-
-### `GET /api/export`
-
-Returns the filtered slice as a downloadable `lunar_xrf_export.csv`.
-Accepts the same query parameters as `/api/data`.
+Returns the full dataset as JSON (used by the original client-side analysis).
 
 ---
 
-## Data Model & Scientific Rules
+## Data Generation
 
-The backend procedurally generates **700 observation vectors** at startup:
+When no CSV is uploaded, the app generates a synthetic lunar XRF dataset with **2,000 samples** and **12 geochemical elements**:
 
-| Field | Description |
-|-------|-------------|
-| `timestamp` | ISO 8601 string, spaced 2.5 min apart from 2019-09-06T00:00:00 |
-| `orbit_number` | Orbits 101–115 (15 passes, ~47 records each) |
-| `latitude` | –90° to +90°, sinusoidal ground-track + Gaussian noise |
-| `longitude` | –180° to +180°, monotonically drifting across all passes |
-| `solar_flux` | 0.5–6.5 W m⁻², composite sinusoidal solar-cycle model |
-| `counts_per_second` | Proportional to `solar_flux` × 45 + 80 + noise |
-| `mg_pct` | Magnesium wt%: peaks near equator (volcanic basalt) |
-| `al_pct` | Aluminum wt%: peaks at poles (anorthosite crust) |
-| `si_pct` | Silicon wt%: elevated at high latitudes |
-| `fe_pct` | Iron wt%: peaks near equator (Mare volcanic plains) |
+| Element | Distribution | Notes |
+|---------|-------------|-------|
+| Al_wt_pct | Normal (anorthosite), Exponential (others) | High in anorthosite crust |
+| Si_wt_pct | Normal ~21% | Consistent across rock types |
+| Mg_wt_pct | Normal (basalt), Exponential (others) | Elevated in mare basalts |
+| Fe_wt_pct | Anti-correlated with Al | Plagioclase effect |
+| Ca_wt_pct | Normal (anorthosite), Exponential (others) | High in anorthosite |
+| Na_wt_pct | Normal ~3% | Moderate variation |
+| K_wt_pct | Normal (regolith), Exponential (others) | Enriched in regolith |
+| Ti_wt_pct | Correlated with Fe | Mafic mineral association |
+| Mn_wt_pct | Correlated with Fe | Trace in mafic minerals |
+| P_wt_pct | Exponential ~0.2% | Trace element |
+| Cr_wt_pct | Normal (basalt), Exponential (others) | Compatible in basalt |
+| Ni_wt_pct | Correlated with Cr | Compatible element pairing |
 
-### Geochemical Rules Encoded
+Additional columns: `Latitude`, `Longitude`, `Elevation_m`, `Rock_Type` (Basalt, Anorthosite, Gabbro, Norite, Troctolite, Regolith), `Region`.
 
-```
-|lat| < 30° → elevated Fe (12–22%) and Mg (7–14%)   # Mare basalt plains
-|lat| > 45° → elevated Al (15–20%) and Si (22–28%)   # Highland anorthosite
-```
+Geochemical rules are encoded via rock-type-dependent distributions and intentional element correlations.
 
 ---
 
 ## Frontend Features
 
-### Control Sidebar
-- **Element selector** — periodic-table shortcut buttons + dropdown
-- **Spatial bounding sliders** — lat/lon range with live value labels
-- **Orbit checkboxes** — ALL / NONE shortcuts + individual orbit selection
-- **Science Briefing** — collapsible educational panel on XRF physics
+### Dashboard
+- **Spatial Distribution Map** — scatter plot coloured by selected element
+- **Frequency Histogram** — distribution of the selected element
+- **Median Abundance Bar Chart** — median values across all elements
+- **Longitude Trend Line** — element variation across longitude
+- **Custom Graph** — user-configured scatter, line, or bar chart
+- **Bounding-box filter** — lat/lon range sliders
 
-### Metric Cards
-Four live-updating KPI tiles: Sample Count, Mean Solar Flux, Peak CPS, Dominant Element
+### Analysis
+- **KPI Cards** — total records, numeric fields, highest mean/median, top correlated pair
+- **Summary Statistics Table** — count, mean, median, std dev, variance, min, max, skewness, kurtosis per element
+- **Mean Abundance Bar Chart** — mean values across all elements
+- **Element Value Distributions** — box plot showing all element ranges
+- **Correlation Matrix Heatmap** — pair-wise Pearson correlation
+- **Element Distribution Histogram** — distribution of the selected element
+- **Element Selector** — switch between elements to update the histogram
 
-### Visualisations (Plotly.js)
+---
 
-1. **2D Spatial Distribution** — Longitude × Latitude scatter map; marker size = CPS, colour = selected element % via Viridis scale
-2. **Spectral Flux Analysis** — Solar Flux vs CPS correlation scatter (Electric colorscale)
-3. **3D Orbital Globe** — Lat/lon projected to spherical coordinates (R=1) with a low-resolution wireframe lunar mesh; full 3D rotation & zoom
+## Design Decisions
 
-### Data Export
-**↓ EXPORT CSV** button downloads the current filtered slice as `lunar_xrf_export_<timestamp>.csv` directly from the browser without an extra server round-trip.
+- **Server-side computation** — all statistics are computed in Pandas, not in the browser. This is faster for large datasets and enables richer metrics (skewness, kurtosis, quartiles) without extra client-side code.
+- **Plotly JSON payloads** — figures are built server-side with Plotly Express, serialised to JSON, decoded from typed arrays, and rendered with `Plotly.react()` for smooth updates and full interactivity.
+- **Dark glass-morphism theme** — translucent panels, radial gradient background, neon green accents. Tailwind CSS handles responsive layout; a small custom CSS file adds backdrop blur and scrollbar styling.
 
 ---
 
 ## UI Design
 
-- **Palette**: deep `slate-950` / `zinc-900` backgrounds, `cyan-400` accents, `emerald`, `amber`, `rose` data ramps
-- **Typography**: Orbitron (display / headers) + IBM Plex Mono (data / body)
-- **Effects**: star-field radial-gradient background, scanline overlay, glowing sidebar headings
-- **Responsiveness**: `grid-cols-1 lg:grid-cols-4` — sidebar collapses above the charts on mobile screens
+- **Palette**: `#0b0f19` (space) backgrounds, `#151b2b` (panel) cards, `#00e676` (neon) accents
+- **Effects**: glass-panel backdrop blur, orbital background gradient, neon text glow
+- **Responsiveness**: `max-w-6xl` content width, 2-column grid layouts on large screens, single column on mobile
 
 ---
 
 ## Performance Notes
 
-- All fetch calls are debounced (160 ms) to prevent API flooding during slider drag
-- `Plotly.react()` is used for all updates (efficient diff-based redraw, no full remount)
-- The 700-record DataFrame is held entirely in memory — no database I/O per request
-- WebGL-accelerated scatter rendering via Plotly's `scattergl` path (auto-selected on large datasets)
+- All API endpoints return JSON only — no server-side HTML rendering for interactive content
+- `Plotly.react()` is used for all chart updates (efficient diff-based redraw)
+- `decode_plotly_bdata()` converts Plotly typed arrays to plain Python lists for clean JSON serialisation
+- The 2,000-record DataFrame is held in memory — no database I/O per request
 
 ---
 

@@ -5,6 +5,7 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for, R
 from werkzeug.utils import secure_filename
 
 from data_processing import (
+    build_analysis_payload,
     build_plot_payloads,
     filter_by_bounds,
     generate_synthetic_data,
@@ -107,6 +108,28 @@ def api_plots():
     )
 
     return jsonify(plot_payloads)
+
+
+@app.route('/api/analysis', methods=['POST'])
+def api_analysis():
+    """Compute analysis statistics and generate Plotly payloads server-side."""
+    data = request.get_json(silent=True) or {}
+    selected_element = data.get('element')
+
+    df = get_current_data(DATA_FILE)
+    _, _, elements = parse_schema(df)
+
+    if not selected_element and elements:
+        selected_element = elements[0]
+
+    payload = build_analysis_payload(df, selected_element, elements)
+    return jsonify(payload)
+
+
+@app.route('/about')
+def about():
+    return render_template('about.html')
+
 
 if __name__ == '__main__':
     app.run(debug=True)

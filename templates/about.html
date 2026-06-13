@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <div class="glass-panel p-8 rounded-xl shadow-lg">
+        <h2 class="text-3xl font-bold mb-6 text-neon border-b border-gray-700 pb-2">About This Project</h2>
+        <p class="text-gray-400 text-lg mb-6">How the Lunar XRF Dashboard was built &mdash; tools, architecture, and design choices.</p>
+
+        <div class="space-y-8">
+            <div>
+                <h3 class="text-xl font-semibold text-white mb-3">Tech Stack</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-gray-900 p-4 rounded-xl border border-gray-800">
+                        <div class="text-neon font-bold mb-1">Backend</div>
+                        <ul class="text-sm text-gray-400 space-y-1">
+                            <li><span class="text-gray-300">Flask</span> &mdash; Python web framework for routing and API endpoints</li>
+                            <li><span class="text-gray-300">Pandas</span> &mdash; data ingestion, schema parsing, statistical computations</li>
+                            <li><span class="text-gray-300">NumPy</span> &mdash; random data generation and numerical operations</li>
+                            <li><span class="text-gray-300">Plotly</span> &mdash; server-side figure generation (JSON payloads)</li>
+                        </ul>
+                    </div>
+                    <div class="bg-gray-900 p-4 rounded-xl border border-gray-800">
+                        <div class="text-neon font-bold mb-1">Frontend</div>
+                        <ul class="text-sm text-gray-400 space-y-1">
+                            <li><span class="text-gray-300">Tailwind CSS</span> &mdash; utility-first styling via CDN</li>
+                            <li><span class="text-gray-300">Plotly.js</span> &mdash; client-side chart rendering from JSON payloads</li>
+                            <li><span class="text-gray-300">Vanilla JS</span> &mdash; Fetch API for AJAX, DOM manipulation</li>
+                            <li><span class="text-gray-300">Jinja2</span> &mdash; server-side template inheritance and rendering</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <h3 class="text-xl font-semibold text-white mb-3">Architecture</h3>
+                <div class="bg-gray-900 p-4 rounded-xl border border-gray-800">
+                    <p class="text-sm text-gray-400 mb-3">
+                        The app follows a classic server-rendered Flask architecture with AJAX-driven interactivity.
+                        All heavy computation happens on the backend &mdash; the browser only renders and plots pre-computed data.
+                    </p>
+                    <div class="space-y-2 text-sm text-gray-400">
+                        <div class="flex items-start gap-3">
+                            <span class="text-neon mt-1">&#8226;</span>
+                            <span><strong class="text-gray-300">Data Layer</strong> &mdash; CSV files are uploaded or generated and read into Pandas DataFrames. A <code class="text-neon bg-gray-800 px-1 rounded">parse_schema</code> function auto-detects lat/lon columns and numeric element fields.</span>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <span class="text-neon mt-1">&#8226;</span>
+                            <span><strong class="text-gray-300">API Layer</strong> &mdash; Flask endpoints serve schema metadata (<code class="text-neon bg-gray-800 px-1 rounded">GET /api/schema</code>), computed Plotly figures (<code class="text-neon bg-gray-800 px-1 rounded">POST /api/plots</code>), and statistical summaries (<code class="text-neon bg-gray-800 px-1 rounded">POST /api/analysis</code>).</span>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <span class="text-neon mt-1">&#8226;</span>
+                            <span><strong class="text-gray-300">Rendering</strong> &mdash; Plotly figures are built server-side with Plotly Express, serialized to JSON, decoded from typed arrays, and rendered client-side with <code class="text-neon bg-gray-800 px-1 rounded">Plotly.react()</code>.</span>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <span class="text-neon mt-1">&#8226;</span>
+                            <span><strong class="text-gray-300">Interactivity</strong> &mdash; Element selectors, bounding-box filters, and refresh buttons trigger new <code class="text-neon bg-gray-800 px-1 rounded">fetch()</code> calls that re-compute everything server-side without a full page reload.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <h3 class="text-xl font-semibold text-white mb-3">Data Generation</h3>
+                <div class="bg-gray-900 p-4 rounded-xl border border-gray-800">
+                    <p class="text-sm text-gray-400 mb-3">
+                        When no CSV is uploaded, the app generates a synthetic lunar XRF dataset with 2,000 samples and 12 geochemical elements:
+                    </p>
+                    <div class="grid grid-cols-3 md:grid-cols-4 gap-2 mb-3">
+                        {% for el in ['Al', 'Si', 'Mg', 'Fe', 'Ca', 'Na', 'K', 'Ti', 'Mn', 'P', 'Cr', 'Ni'] %}
+                        <span class="text-xs bg-gray-800 text-gray-300 px-2 py-1 rounded text-center">{{ el }}_wt_pct</span>
+                        {% endfor %}
+                    </div>
+                    <p class="text-sm text-gray-400">
+                        Each element follows a distinct statistical distribution influenced by rock type (Basalt, Anorthosite, Gabbro, Norite, Troctolite, Regolith). Elements are intentionally correlated &mdash; for example, Fe is anti-correlated with Al (plagioclase effect), Ti and Mn track Fe (mafic mineral association), and Ni correlates with Cr (compatible element pairing). Spatial coordinates are randomly distributed across lunar near-side regions.
+                    </p>
+                </div>
+            </div>
+
+            <div>
+                <h3 class="text-xl font-semibold text-white mb-3">Design Decisions</h3>
+                <div class="space-y-3">
+                    <div class="bg-gray-900 p-4 rounded-xl border border-gray-800">
+                        <div class="text-sm text-gray-300 font-medium mb-1">Server-side computation over client-side</div>
+                        <p class="text-sm text-gray-400">The original analysis page calculated means, medians, and correlations in JavaScript by iterating over all rows. For large datasets this is slow and blocks the UI. Moving statistics to Pandas made the analysis page faster and enabled richer metrics (skewness, kurtosis, quartiles) at no extra cost.</p>
+                    </div>
+                    <div class="bg-gray-900 p-4 rounded-xl border border-gray-800">
+                        <div class="text-sm text-gray-300 font-medium mb-1">Plotly JSON payloads instead of HTML</div>
+                        <p class="text-sm text-gray-400">Rather than embedding Plotly figures as HTML or rendering them server-side as images, the API returns JSON figure descriptors. This allows the client to use <code class="text-neon bg-gray-800 px-1 rounded">Plotly.react()</code> for smooth updates, preserves interactivity (hover, zoom, pan), and keeps the backend stateless between requests.</p>
+                    </div>
+                    <div class="bg-gray-900 p-4 rounded-xl border border-gray-800">
+                        <div class="text-sm text-gray-300 font-medium mb-1">Dark theme with glass-morphism</div>
+                        <p class="text-sm text-gray-400">The UI uses a dark space-inspired palette with translucent glass panels, a subtle radial gradient background, and neon green accents. Tailwind CSS handles responsive layout while a small custom CSS file adds backdrop blur effects and scrollbar styling.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <h3 class="text-xl font-semibold text-white mb-3">About the Creator</h3>
+                <div class="bg-gray-900 p-4 rounded-xl border border-gray-800">
+                    <div class="flex flex-col md:flex-row gap-4 mb-4">
+                        <div class="md:w-1/3 flex flex-col items-center md:items-start">
+                            <div class="w-32 h-32 rounded-full bg-gradient-to-br from-neon to-green-800 flex items-center justify-center text-4xl font-bold text-white mb-3">
+                                RD
+                            </div>
+                            <h4 class="text-lg font-bold text-white">Reman Dey</h4>
+                            <p class="text-sm text-gray-400">Engineering Physics &bull; IIT Mandi</p>
+                        </div>
+                        <div class="md:w-2/3 text-sm text-gray-400 space-y-2">
+                            <p>
+                                <b class="text-gray-300">I'm Reman Dey</b>, a physics enthusiast and innovator with a strong interest in both theoretical principles and practical application. I am currently pursuing a <b class="text-gray-300">B.Tech in Engineering Physics</b> at the <a href="https://www.iitmandi.ac.in/" class="text-neon hover:underline">Indian Institute of Technology Mandi</a>.
+                            </p>
+                            <p>
+                                This application was made for the STAC competition, but it also serves as a personal project to explore data visualization, web development, and lunar science. I have a passion for learning new technologies and applying them to solve interesting problems. In my free time, I enjoy working on robotics projects, building web apps, and diving into machine learning research.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                        <div>
+                            <h5 class="text-sm font-semibold text-white mb-2">Skills & Expertise</h5>
+                            <ul class="text-xs text-gray-400 space-y-1">
+                                <li>&bull; <b class="text-gray-300">Languages:</b> Python, C, C++, JS, HTML/CSS</li>
+                                <li>&bull; <b class="text-gray-300">Hardware:</b> Embedded Systems, Circuit Design, Robotics</li>
+                                <li>&bull; <b class="text-gray-300">Software:</b> Web Apps, Bot Dev, NLP, AI/ML</li>
+                                <li>&bull; <b class="text-gray-300">Tools:</b> Git, GitHub, Arduino, Raspberry Pi</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h5 class="text-sm font-semibold text-white mb-2">Projects</h5>
+                            <ul class="text-xs text-gray-400 space-y-1">
+                                <li>&bull; <a href="https://remandey.github.io/FriendForge/" class="text-neon hover:underline">FriendForge</a> &mdash; social connection app</li>
+                                <li>&bull; <a href="https://remandey.github.io/DodoTalks/" class="text-neon hover:underline">DodoTalks</a> &mdash; AI chat app</li>
+                                <li>&bull; Hovercraft, Tesla Turbine, Quadcopter</li>
+                                <li>&bull; Laser-based transmitter &amp; receiver</li>
+                                <li>&bull; <a href="https://github.com/remandey/micro-rover" class="text-neon hover:underline">Micro Rover</a> &mdash; compact exploration rover</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-4 mt-4 pt-3 border-t border-gray-800">
+                        <a href="https://github.com/RemanDey" class="text-gray-400 hover:text-neon transition text-sm"><i class="fab fa-github"></i> GitHub</a>
+                        <a href="https://linkedin.com/in/remandey" class="text-gray-400 hover:text-neon transition text-sm"><i class="fab fa-linkedin"></i> LinkedIn</a>
+                        <a href="mailto:reman.airport@gmail.com" class="text-gray-400 hover:text-neon transition text-sm"><i class="fas fa-envelope"></i> Email</a>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <h3 class="text-xl font-semibold text-white mb-3">Source Code</h3>
+                <div class="bg-gray-900 p-4 rounded-xl border border-gray-800 text-sm text-gray-400">
+                    <p>The full project is available on GitHub. The key source files are:</p>
+                    <ul class="mt-2 space-y-1">
+                        <li><code class="text-neon bg-gray-800 px-1 rounded">app.py</code> &mdash; Flask routes and API endpoints</li>
+                        <li><code class="text-neon bg-gray-800 px-1 rounded">data_processing.py</code> &mdash; data ingestion, schema parsing, figure generation, analysis engine</li>
+                        <li><code class="text-neon bg-gray-800 px-1 rounded">templates/</code> &mdash; Jinja2 HTML templates (base, index, dashboard, analysis, about)</li>
+                        <li><code class="text-neon bg-gray-800 px-1 rounded">static/js/</code> &mdash; frontend JavaScript (dashboard.js, analysis.js)</li>
+                        <li><code class="text-neon bg-gray-800 px-1 rounded">static/css/style.css</code> &mdash; custom dark-theme styles</li>
+                        <li><code class="text-neon bg-gray-800 px-1 rounded">requirements.txt</code> &mdash; Python dependencies</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,22 +1,31 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto space-y-6">
+<div class="max-w-6xl mx-auto space-y-6">
     <div class="glass-panel p-8 rounded-xl shadow-lg">
         <h2 class="text-3xl font-bold mb-6 text-neon border-b border-gray-700 pb-2">Geochemical Analysis</h2>
-        
-        <div class="space-y-6 text-gray-300 leading-relaxed text-lg">
-            <p>
-                X-ray Fluorescence (XRF) spectroscopy quantifies elemental abundances at geospatial locations. This analysis suite provides client-side statistical summaries, correlations, and visualizations of the loaded dataset.
-            </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="space-y-4 text-gray-300 leading-relaxed text-lg">
+                <p>
+                    X-ray Fluorescence (XRF) spectroscopy quantifies elemental abundances at geospatial locations. This analysis suite provides server-side statistical summaries, correlations, and visualizations of the loaded dataset.
+                </p>
+            </div>
+            <div class="bg-gray-900 p-4 rounded-xl border border-gray-800">
+                <label for="element-select" class="block text-sm font-medium text-gray-400 mb-2">Select Element</label>
+                <select id="element-select" class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-neon focus:border-neon">
+                    <option value="">Loading...</option>
+                </select>
+                <p class="text-xs text-gray-500 mt-2">Choose an element to view its distribution and update analysis.</p>
+            </div>
         </div>
     </div>
 
     <div class="glass-panel p-8 rounded-xl shadow-lg">
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
             <div>
-                <h2 class="text-2xl font-bold text-white">Dynamic Analysis</h2>
-                <p class="text-gray-400">Client-side aggregations and statistical summaries from the current dataset.</p>
+                <h2 class="text-2xl font-bold text-white">Statistical Summary</h2>
+                <p class="text-gray-400">Server-side aggregations and statistical summaries from the current dataset.</p>
             </div>
             <button id="refresh-analysis" type="button" class="bg-neon text-space px-5 py-2 rounded font-semibold hover:bg-green-400 transition">
                 Refresh Data
@@ -29,15 +38,29 @@
             <h3 class="text-xl font-semibold text-white mb-4">Summary Statistics</h3>
             <div id="analysis-table" class="overflow-x-auto"></div>
         </div>
+    </div>
 
-        <div class="bg-gray-900 p-4 rounded-xl border border-gray-800 mt-6">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="glass-panel p-6 rounded-xl shadow-lg">
             <h3 class="text-xl font-semibold text-white mb-4">Mean Abundance Across Elements</h3>
-            <div id="analysis-chart" class="w-full h-96"></div>
+            <div id="analysis-chart" class="w-full h-80"></div>
         </div>
 
-        <div class="bg-gray-900 p-4 rounded-xl border border-gray-800 mt-6">
+        <div class="glass-panel p-6 rounded-xl shadow-lg">
+            <h3 class="text-xl font-semibold text-white mb-4">Element Value Distributions</h3>
+            <div id="analysis-boxplot" class="w-full h-80"></div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="glass-panel p-6 rounded-xl shadow-lg">
             <h3 class="text-xl font-semibold text-white mb-4">Correlation Matrix Heatmap</h3>
-            <div id="analysis-heatmap" class="w-full h-96"></div>
+            <div id="analysis-heatmap" class="w-full h-80"></div>
+        </div>
+
+        <div class="glass-panel p-6 rounded-xl shadow-lg">
+            <h3 class="text-xl font-semibold text-white mb-4">Element Distribution</h3>
+            <div id="analysis-histogram" class="w-full h-80"></div>
         </div>
     </div>
 </div>
