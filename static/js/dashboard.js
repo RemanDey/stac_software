@@ -117,6 +117,11 @@ function fetchPlots(isCustom = false) {
         renderPlot('correlation-heatmap', data.correlation_heatmap);
         renderPlot('distribution-histogram', data.distribution_histogram);
         renderPlot('custom-plot', data.custom_json);
+
+        const prompt = document.getElementById('custom-plot-prompt');
+        if (prompt) {
+            prompt.style.display = data.custom_json ? 'none' : 'flex';
+        }
     })
     .catch(err => console.error('Error fetching plots:', err));
 }
